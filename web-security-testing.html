@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WebShield — Security Testing Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a0f;
+    --surface: #0a1520;
+    --card: #0d1e2e;
+    --border: #1a3a55;
+    --accent: #00d4ff;
+    --accent2: #00ff9d;
+    --accent3: #ff3c5a;
+    --warn: #ffb300;
+    --text: #c8e0f0;
+    --muted: #5a8099;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui: 'Rajdhani', sans-serif;
+    --font-title: 'Orbitron', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(5,10,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+  }
+  .nav-logo {
+    font-family: var(--font-title);
+    font-size: 1.1rem;
+    color: var(--accent);
+    letter-spacing: 2px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-logo span { color: var(--accent2); }
+  .nav-links { display: flex; gap: 2rem; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+  .nav-status {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.75rem; color: var(--accent2);
+    font-family: var(--font-mono);
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(0,255,157,0.4); }
+    50% { opacity:0.7; box-shadow: 0 0 0 6px rgba(0,255,157,0); }
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    z-index: 2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 80px 2rem 4rem;
+  }
+  .hero-badge {
+    display: inline-block;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    padding: 4px 14px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.8s ease both;
+  }
+  .hero h1 {
+    font-family: var(--font-title);
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+    animation: fadeUp 0.8s 0.1s ease both;
+  }
+  .hero h1 .line1 { color: var(--text); }
+  .hero h1 .line2 {
+    color: var(--accent);
+    text-shadow: 0 0 40px rgba(0,212,255,0.5);
+    display: block;
+  }
+  .hero-sub {
+    max-width: 600px;
+    color: var(--muted);
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+    animation: fadeUp 0.8s 0.2s ease both;
+  }
+  .hero-ctas {
+    display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 0.8s 0.3s ease both;
+  }
+  .btn {
+    padding: 12px 28px;
+    font-family: var(--font-ui);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+  }
+  .btn-primary:hover { background: var(--accent2); transform: translateY(-2px); }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-outline:hover { background: rgba(0,212,255,0.1); transform: translateY(-2px); }
+
+  .hero-stats {
+    display: flex; gap: 3rem; margin-top: 4rem;
+    animation: fadeUp 0.8s 0.4s ease both;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-family: var(--font-title);
+    font-size: 2rem;
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .stat-label { font-size: 0.75rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(20px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ── SECTIONS ── */
+  section { position: relative; z-index: 2; padding: 5rem 2rem; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .section-header {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 3rem;
+  }
+  .section-tag {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 3px 10px;
+    letter-spacing: 2px;
+  }
+  .section-title {
+    font-family: var(--font-title);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 2px;
+  }
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  /* ── TOOLS GRID ── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+  }
+  .tool-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .tool-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+  .tool-card:hover::before { transform: scaleX(1); }
+  .tool-card:hover { border-color: rgba(0,212,255,0.4); transform: translateY(-3px); }
+
+  .tool-header {
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .tool-icon {
+    width: 36px; height: 36px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .tool-name {
+    font-family: var(--font-title);
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    color: var(--text);
+  }
+  .tool-type {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .tool-body { padding: 1.5rem; }
+
+  /* Input styles */
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    display: block;
+  }
+  .field-input {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 1rem;
+  }
+  .field-input:focus { border-color: var(--accent); }
+  .field-select {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 10px 14px;
+    outline: none;
+    margin-bottom: 1rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%2300d4ff' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .field-select option { background: var(--surface); }
+
+  .run-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: var(--font-ui);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+  .run-btn:hover { background: rgba(0,212,255,0.1); }
+  .run-btn:active { background: rgba(0,212,255,0.2); }
+  .run-btn.danger { border-color: var(--accent3); color: var(--accent3); }
+  .run-btn.danger:hover { background: rgba(255,60,90,0.1); }
+  .run-btn.success-btn { border-color: var(--accent2); color: var(--accent2); }
+  .run-btn.success-btn:hover { background: rgba(0,255,157,0.1); }
+
+  .output-box {
+    margin-top: 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.7;
+    min-height: 60px;
+    display: none;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .output-box.visible { display: block; }
+  .output-box.error { border-left-color: var(--accent3); }
+  .output-box.warn { border-left-color: var(--warn); }
+  .output-box.ok { border-left-color: var(--accent2); }
+  .ok-text { color: var(--accent2); }
+  .err-text { color: var(--accent3); }
+  .warn-text { color: var(--warn); }
+  .info-text { color: var(--accent); }
+  .dim-text { color: var(--muted); }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    margin: 1rem 0;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    width: 0%;
+    transition: width 0.1s;
+  }
+
+  /* Severity badges */
+  .severity {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    padding: 2px 8px;
+    letter-spacing: 1px;
+    font-weight: bold;
+  }
+  .sev-critical { background: rgba(255,60,90,0.15); color: #ff3c5a; border: 1px solid #ff3c5a; }
+  .sev-high { background: rgba(255,100,0,0.15); color: #ff6400; border: 1px solid #ff6400; }
+  .sev-medium { background: rgba(255,179,0,0.15); color: var(--warn); border: 1px solid var(--warn); }
+  .sev-low { background: rgba(0,255,157,0.15); color: var(--accent2); border: 1px solid var(--accent2); }
+  .sev-info { background: rgba(0,212,255,0.15); color: var(--accent); border: 1px solid var(--accent); }
+
+  /* ── VULNERABILITY SCANNER (visual demo) ── */
+  .vuln-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    margin-top: 1rem;
+    display: none;
+  }
+  .vuln-table.visible { display: table; }
+  .vuln-table th {
+    background: rgba(0,212,255,0.08);
+    color: var(--accent);
+    padding: 8px 12px;
+    text-align: left;
+    letter-spacing: 1px;
+    font-size: 0.7rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .vuln-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(26,58,85,0.5);
+    color: var(--text);
+  }
+  .vuln-table tr:last-child td { border-bottom: none; }
+  .vuln-table tr:hover td { background: rgba(0,212,255,0.03); }
+
+  /* ── OWASP TOP 10 ── */
+  .owasp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .owasp-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .owasp-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,212,255,0.05) 0%, transparent 50%);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .owasp-card:hover::after { opacity: 1; }
+  .owasp-card:hover { border-color: rgba(0,212,255,0.3); }
+  .owasp-num {
+    font-family: var(--font-title);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: rgba(0,212,255,0.1);
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .owasp-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+  }
+  .owasp-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+  .owasp-risk {
+    margin-top: 0.8rem;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .risk-bar {
+    flex: 1; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .risk-fill { height: 100%; border-radius: 2px; }
+
+  
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative;
+    z-index: 2;
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  /* Loader animation */
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .blink { animation: blink 1s infinite; }
+
+  /* Section divider */
+  .divider {
+    position: relative; z-index: 2;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⬡ WEB<span>SHIELD</span></div>
+  <div class="nav-links">
+    <a href="#tools">Tools</a>
+    <a href="#owasp">OWASP</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#glossary">Glossary</a>
+  </div>
+  <div class="nav-status">
+    <div class="status-dot"></div>
+    SYSTEM ONLINE
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>
+    <span class="line1">PENETRATION</span>
+    <span class="line2">TESTING LAB</span>
+  </h1>
+  <p class="hero-sub">
+    An interactive web security testing platform covering vulnerability analysis, 
+    OWASP Top 10, live security tools, and ethical hacking fundamentals.
+  </p>
+  <div class="hero-ctas">
+    <a class="btn btn-primary" href="#tools">Launch Tools</a>
+    <a class="btn btn-outline" href="#owasp">OWASP Top 10</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat">
+      <div class="stat-num">10</div>
+      <div class="stat-label">OWASP Risks</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Live Tools</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">20+</div>
+      <div class="stat-label">Quiz Questions</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- TOOLS -->
+<section id="tools">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">01</div>
+      <div class="section-title">SECURITY TOOLS</div>
+      <div class="section-line"></div>
+    </div>
+
+    <div class="tools-grid">
+
+      <!-- 1. URL VALIDATOR / XSS DETECTOR -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">🔍</div>
+          <div>
+            <div class="tool-name">XSS DETECTOR</div>
+            <div class="tool-type">Cross-Site Scripting Analyzer</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">Input String / Payload</label>
+          <input class="field-input" id="xss-input" type="text" placeholder="Enter text or URL parameter...">
+          <button class="run-btn danger" onclick="runXSS()">▶ ANALYZE PAYLOAD</button>
+          <div class="progress-bar" id="xss-prog"><div class="progress-fill" id="xss-fill"></div></div>
+          <div class="output-box" id="xss-out"></div>
+        </div>
+      </div>
+
+      <!-- 2. SQL INJECTION CHECKER -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">💉</div>
+          <div>
+            <div class="tool-name">SQLI SCANNER</div>
+            <div class="tool-type">SQL Injection Pattern Detector</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">Query / Input Field Value</label>
+          <input class="field-input" id="sqli-input" type="text" placeholder="e.g. admin' OR '1'='1">
+          <button class="run-btn danger" onclick="runSQLi()">▶ SCAN FOR INJECTION</button>
+          <div class="progress-bar" id="sqli-prog"><div class="progress-fill" id="sqli-fill"></div></div>
+          <div class="output-box" id="sqli-out"></div>
+        </div>
+      </div>
+
+      <!-- 3. PASSWORD STRENGTH -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">🔐</div>
+          <div>
+            <div class="tool-name">PASSWORD AUDITOR</div>
+            <div class="tool-type">Strength & Entropy Analyzer</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">Password to Analyze</label>
+          <input class="field-input" id="pwd-input" type="password" placeholder="Enter password...">
+          <button class="run-btn success-btn" onclick="runPassword()">▶ AUDIT STRENGTH</button>
+          <div class="output-box" id="pwd-out"></div>
+        </div>
+      </div>
+
+      <!-- 4. HEADER SECURITY CHECKER -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">📋</div>
+          <div>
+            <div class="tool-name">HEADER CHECKER</div>
+            <div class="tool-type">HTTP Security Headers Analyzer</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">Paste HTTP Response Headers</label>
+          <textarea class="field-input" id="header-input" rows="4" placeholder="Content-Type: text/html&#10;X-Frame-Options: DENY&#10;Strict-Transport-Security: max-age=31536000&#10;..."></textarea>
+          <button class="run-btn" onclick="runHeaders()">▶ CHECK HEADERS</button>
+          <div class="output-box" id="header-out"></div>
+        </div>
+      </div>
+
+      <!-- 5. URL PARSER / PHISHING DETECTOR -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">🌐</div>
+          <div>
+            <div class="tool-name">PHISHING DETECTOR</div>
+            <div class="tool-type">Suspicious URL Pattern Scanner</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">URL to Inspect</label>
+          <input class="field-input" id="url-input" type="text" placeholder="https://example.com/path?param=value">
+          <button class="run-btn" onclick="runURL()">▶ INSPECT URL</button>
+          <div class="progress-bar" id="url-prog"><div class="progress-fill" id="url-fill"></div></div>
+          <div class="output-box" id="url-out"></div>
+        </div>
+      </div>
+
+      <!-- 6. ENCODING TOOL -->
+      <div class="tool-card">
+        <div class="tool-header">
+          <div class="tool-icon">🔄</div>
+          <div>
+            <div class="tool-name">ENCODE / DECODE</div>
+            <div class="tool-type">Base64 · URL · HTML Entity</div>
+          </div>
+        </div>
+        <div class="tool-body">
+          <label class="field-label">Input Text</label>
+          <input class="field-input" id="enc-input" type="text" placeholder="Enter text to encode/decode...">
+          <label class="field-label">Mode</label>
+          <select class="field-select" id="enc-mode">
+            <option value="b64enc">Base64 → Encode</option>
+            <option value="b64dec">Base64 → Decode</option>
+            <option value="urlenc">URL → Encode</option>
+            <option value="urldec">URL → Decode</option>
+            <option value="htmlenc">HTML Entity → Encode</option>
+          </select>
+          <button class="run-btn success-btn" onclick="runEncode()">▶ TRANSFORM</button>
+          <div class="output-box" id="enc-out"></div>
+        </div>
+      </div>
+
+    </div><!-- /tools-grid -->
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- OWASP -->
+<section id="owasp" style="background: rgba(0,212,255,0.01);">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">02</div>
+      <div class="section-title">OWASP TOP 10</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="owasp-grid" id="owasp-grid"></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+<footer>
+  <div style="margin-top:4px; color:rgba(90,128,153,0.5);">All tools are for educational purposes only. Do not use against systems you do not own.</div>
+</footer>
+
+<script>
+// ──────────── HELPERS ────────────
+function animate(fillId, progId, ms, cb) {
+  const bar = document.getElementById(progId);
+  const fill = document.getElementById(fillId);
+  bar.classList.add('visible');
+  fill.style.width = '0%';
+  let pct = 0;
+  const step = 100 / (ms / 50);
+  const iv = setInterval(() => {
+    pct = Math.min(pct + step + Math.random()*step, 95);
+    fill.style.width = pct + '%';
+  }, 50);
+  setTimeout(() => {
+    clearInterval(iv);
+    fill.style.width = '100%';
+    setTimeout(() => { bar.classList.remove('visible'); cb(); }, 200);
+  }, ms);
+}
+
+function showOut(id, html, type='') {
+  const el = document.getElementById(id);
+  el.className = 'output-box visible' + (type ? ' '+type : '');
+  el.innerHTML = html;
+}
+
+// ──────────── XSS DETECTOR ────────────
+const xssPatterns = [
+  { re: /<script[\s>]/i, name:'<script> tag', sev:'critical' },
+  { re: /javascript:/i, name:'javascript: protocol', sev:'critical' },
+  { re: /on\w+\s*=/i, name:'Inline event handler (onXxx=)', sev:'high' },
+  { re: /<iframe/i, name:'<iframe> element', sev:'high' },
+  { re: /document\.cookie/i, name:'Cookie access attempt', sev:'high' },
+  { re: /eval\s*\(/i, name:'eval() call', sev:'high' },
+  { re: /<img[^>]+onerror/i, name:'<img onerror> pattern', sev:'high' },
+  { re: /alert\s*\(/i, name:'alert() — classic XSS probe', sev:'medium' },
+  { re: /document\.write/i, name:'document.write() call', sev:'medium' },
+  { re: /\bprompt\s*\(/i, name:'prompt() call', sev:'medium' },
+  { re: /&#x[0-9a-f]+;/i, name:'Hex HTML entities (obfuscation)', sev:'low' },
+  { re: /%3c|%3e/i, name:'URL-encoded angle brackets', sev:'low' },
+];
+
+function runXSS() {
+  const val = document.getElementById('xss-input').value;
+  if(!val) return showOut('xss-out','<span class="warn-text">⚠ Enter a value to analyze.</span>','warn');
+  animate('xss-fill','xss-prog',900, () => {
+    const hits = xssPatterns.filter(p => p.re.test(val));
+    if(hits.length === 0) {
+      showOut('xss-out', `<span class="ok-text">✔ CLEAN</span> — No XSS patterns detected.\n<span class="dim-text">Input: "${escH(val)}"</span>`, 'ok');
+    } else {
+      let html = `<span class="err-text">✘ ${hits.length} PATTERN(S) DETECTED</span>\n\n`;
+      hits.forEach(h => {
+        const badge = h.sev==='critical'?'sev-critical':h.sev==='high'?'sev-high':h.sev==='medium'?'sev-medium':'sev-low';
+        html += `<span class="severity ${badge}">${h.sev.toUpperCase()}</span>  ${h.name}\n`;
+      });
+      html += `\n<span class="dim-text">Recommendation: Sanitize all user inputs. Use a Content Security Policy (CSP) header and HTML-encode output before rendering.</span>`;
+      showOut('xss-out', html, 'error');
+    }
+  });
+}
+
+function escH(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ──────────── SQL INJECTION ────────────
+const sqliPatterns = [
+  { re: /'\s*(or|and)\s*'?\d/i, name:"Boolean logic injection (OR/AND)", sev:'critical' },
+  { re: /;\s*(drop|delete|truncate|insert|update)\s/i, name:"Stacked query (DDL/DML)", sev:'critical' },
+  { re: /union\s+(all\s+)?select/i, name:"UNION SELECT statement", sev:'critical' },
+  { re: /--\s*$|#\s*$|\/\*/, name:"Comment terminator (-- or #)", sev:'high' },
+  { re: /'\s*=\s*'/, name:"Tautology pattern (' = ')", sev:'high' },
+  { re: /sleep\s*\(|waitfor\s+delay/i, name:"Time-based blind SQLi probe", sev:'high' },
+  { re: /information_schema|sys\.tables|sysobjects/i, name:"Metadata schema access", sev:'high' },
+  { re: /exec\s*\(|xp_cmdshell/i, name:"Stored procedure / shell exec", sev:'critical' },
+  { re: /char\s*\(\d/i, name:"CHAR() encoding obfuscation", sev:'medium' },
+  { re: /0x[0-9a-f]{4,}/i, name:"Hex literal (possible obfuscation)", sev:'low' },
+];
+
+function runSQLi() {
+  const val = document.getElementById('sqli-input').value;
+  if(!val) return showOut('sqli-out','<span class="warn-text">⚠ Enter a query value to scan.</span>','warn');
+  animate('sqli-fill','sqli-prog',1000, () => {
+    const hits = sqliPatterns.filter(p => p.re.test(val));
+    if(hits.length === 0) {
+      showOut('sqli-out', `<span class="ok-text">✔ NO PATTERNS DETECTED</span>\n<span class="dim-text">Input appears clean of known SQLi signatures.\nAlways use parameterized queries / prepared statements regardless.</span>`, 'ok');
+    } else {
+      let html = `<span class="err-text">✘ SQL INJECTION RISK DETECTED</span>\n`;
+      html += `<span class="dim-text">Found ${hits.length} suspicious pattern(s):\n\n</span>`;
+      hits.forEach(h => {
+        const badge = h.sev==='critical'?'sev-critical':h.sev==='high'?'sev-high':h.sev==='medium'?'sev-medium':'sev-low';
+        html += `<span class="severity ${badge}">${h.sev.toUpperCase()}</span>  ${h.name}\n`;
+      });
+      html += `\n<span class="dim-text">Fix: Use parameterized queries, ORM frameworks, and input whitelisting. Never concatenate user input into SQL strings.</span>`;
+      showOut('sqli-out', html, 'error');
+    }
+  });
+}
+
+// ──────────── PASSWORD AUDITOR ────────────
+function runPassword() {
+  const pwd = document.getElementById('pwd-input').value;
+  if(!pwd) return showOut('pwd-out','<span class="warn-text">⚠ Enter a password.</span>','warn');
+
+  const checks = {
+    len8:   pwd.length >= 8,
+    len12:  pwd.length >= 12,
+    len16:  pwd.length >= 16,
+    upper:  /[A-Z]/.test(pwd),
+    lower:  /[a-z]/.test(pwd),
+    digit:  /[0-9]/.test(pwd),
+    symbol: /[^A-Za-z0-9]/.test(pwd),
+    common: !['password','123456','qwerty','abc123','letmein','admin','welcome','monkey'].includes(pwd.toLowerCase()),
+  };
+
+  const charSet = (checks.upper?26:0)+(checks.lower?26:0)+(checks.digit?10:0)+(checks.symbol?32:0);
+  const entropy = charSet > 0 ? Math.round(pwd.length * Math.log2(charSet)) : 0;
+
+  let score = 0;
+  if(checks.len8) score++;
+  if(checks.len12) score++;
+  if(checks.len16) score++;
+  if(checks.upper) score++;
+  if(checks.lower) score++;
+  if(checks.digit) score++;
+  if(checks.symbol) score += 2;
+  if(checks.common) score++;
+  if(!checks.common) score = Math.min(score, 2);
+
+  const ratings = ['VERY WEAK','WEAK','WEAK','FAIR','FAIR','GOOD','GOOD','STRONG','VERY STRONG'];
+  const colors  = ['err-text','err-text','err-text','warn-text','warn-text','info-text','info-text','ok-text','ok-text'];
+  const rating = ratings[Math.min(score, 8)];
+  const col    = colors[Math.min(score, 8)];
+
+  const bar = '█'.repeat(Math.min(score,8)) + '░'.repeat(8 - Math.min(score,8));
+
+  let html = `STRENGTH: <span class="${col}">${rating}</span>  [${bar}]\n`;
+  html += `ENTROPY:  <span class="info-text">${entropy} bits</span>\n`;
+  html += `LENGTH:   ${pwd.length} chars\n\n`;
+  html += `<span class="dim-text">CHECKS:\n`;
+  html += `${checks.len8  ? '✔':'✘'} Minimum 8 characters\n`;
+  html += `${checks.len12 ? '✔':'✘'} 12+ characters (recommended)\n`;
+  html += `${checks.upper ? '✔':'✘'} Uppercase letters\n`;
+  html += `${checks.lower ? '✔':'✘'} Lowercase letters\n`;
+  html += `${checks.digit ? '✔':'✘'} Numbers\n`;
+  html += `${checks.symbol? '✔':'✘'} Symbols (!@#$...)\n`;
+  html += `${checks.common? '✔':'✘'} Not in common list</span>`;
+
+  const type = score >= 6 ? 'ok' : score >= 4 ? 'warn' : 'error';
+  showOut('pwd-out', html, type);
+}
+
+// ──────────── HEADER CHECKER ────────────
+const requiredHeaders = [
+  { name:'Content-Security-Policy', key:'content-security-policy', sev:'critical', desc:'Prevents XSS and data injection attacks.' },
+  { name:'X-Frame-Options', key:'x-frame-options', sev:'high', desc:'Prevents clickjacking via iframes.' },
+  { name:'Strict-Transport-Security', key:'strict-transport-security', sev:'high', desc:'Forces HTTPS connections (HSTS).' },
+  { name:'X-Content-Type-Options', key:'x-content-type-options', sev:'medium', desc:'Prevents MIME-type sniffing.' },
+  { name:'Referrer-Policy', key:'referrer-policy', sev:'medium', desc:'Controls referrer info sent with requests.' },
+  { name:'Permissions-Policy', key:'permissions-policy', sev:'low', desc:'Controls browser feature access.' },
+  { name:'X-XSS-Protection', key:'x-xss-protection', sev:'low', desc:'Legacy XSS filter (deprecated but noted).' },
+];
+
+function runHeaders() {
+  const raw = document.getElementById('header-input').value.toLowerCase();
+  if(!raw.trim()) return showOut('header-out','<span class="warn-text">⚠ Paste HTTP headers above.</span>','warn');
+
+  let html = '<span class="info-text">SECURITY HEADER ANALYSIS</span>\n\n';
+  let missing = 0;
+  requiredHeaders.forEach(h => {
+    const present = raw.includes(h.key);
+    if(!present) missing++;
+    const badge = h.sev==='critical'?'sev-critical':h.sev==='high'?'sev-high':h.sev==='medium'?'sev-medium':'sev-low';
+    html += `${present?'<span class="ok-text">✔</span>':'<span class="err-text">✘</span>'} `;
+    if(!present) html += `<span class="severity ${badge}">${h.sev.toUpperCase()}</span> `;
+    html += `${h.name}`;
+    if(!present) html += `\n  <span class="dim-text">↳ MISSING: ${h.desc}</span>`;
+    html += '\n';
+  });
+  html += `\n<span class="dim-text">Result: ${requiredHeaders.length - missing}/${requiredHeaders.length} headers present.</span>`;
+  const type = missing === 0 ? 'ok' : missing <= 2 ? 'warn' : 'error';
+  showOut('header-out', html, type);
+}
+
+// ──────────── PHISHING DETECTOR ────────────
+function runURL() {
+  const val = document.getElementById('url-input').value.trim();
+  if(!val) return showOut('url-out','<span class="warn-text">⚠ Enter a URL to inspect.</span>','warn');
+  animate('url-fill','url-prog',800, () => {
+    let flags = [];
+    let html = '<span class="info-text">URL ANALYSIS REPORT</span>\n\n';
+    let url;
+    try { url = new URL(val.startsWith('http') ? val : 'https://'+val); } catch(e) {
+      return showOut('url-out','<span class="err-text">✘ INVALID URL FORMAT</span>','error');
+    }
+    html += `<span class="dim-text">Protocol : </span>${url.protocol}\n`;
+    html += `<span class="dim-text">Host     : </span>${url.hostname}\n`;
+    html += `<span class="dim-text">Path     : </span>${url.pathname || '/'}\n`;
+    html += `<span class="dim-text">Params   : </span>${url.search || 'none'}\n\n`;
+
+    if(url.protocol === 'http:') flags.push({sev:'high', msg:'Not HTTPS — data transmitted unencrypted'});
+    if((url.hostname.match(/\./g)||[]).length > 3) flags.push({sev:'medium', msg:'Excessive subdomains — common in phishing'});
+    if(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/.test(url.hostname)) flags.push({sev:'high', msg:'IP address used as host — suspicious'});
+    if(/@/.test(url.href)) flags.push({sev:'critical', msg:'@ symbol in URL — redirects to attacker'});
+    if(url.hostname.length > 40) flags.push({sev:'medium', msg:'Unusually long hostname'});
+    if(/paypal|amazon|google|microsoft|apple|bank/.test(url.hostname) && !/\.(com|co\.uk|net)$/.test(url.hostname)) flags.push({sev:'critical', msg:'Brand name in suspicious domain'});
+    if(url.search.length > 200) flags.push({sev:'medium', msg:'Very long query string — potential parameter pollution'});
+    if(/[^\x00-\x7F]/.test(url.hostname)) flags.push({sev:'high', msg:'Non-ASCII hostname (IDN homograph attack)'});
+    if(/\.(tk|ml|ga|cf|gq)$/.test(url.hostname)) flags.push({sev:'medium', msg:'Free TLD often used in phishing'});
+    if(/%2f|%2e|%40/i.test(url.href)) flags.push({sev:'low', msg:'URL-encoded characters detected'});
+
+    if(flags.length === 0) {
+      html += '<span class="ok-text">✔ NO SUSPICIOUS INDICATORS FOUND</span>';
+      showOut('url-out', html, 'ok');
+    } else {
+      html += `<span class="err-text">⚠ ${flags.length} INDICATOR(S) FOUND</span>\n\n`;
+      flags.forEach(f => {
+        const badge = f.sev==='critical'?'sev-critical':f.sev==='high'?'sev-high':f.sev==='medium'?'sev-medium':'sev-low';
+        html += `<span class="severity ${badge}">${f.sev.toUpperCase()}</span>  ${f.msg}\n`;
+      });
+      showOut('url-out', html, flags.some(f=>f.sev==='critical'||f.sev==='high')?'error':'warn');
+    }
+  });
+}
+
+// ──────────── ENCODE / DECODE ────────────
+function runEncode() {
+  const val = document.getElementById('enc-input').value;
+  const mode = document.getElementById('enc-mode').value;
+  if(!val) return showOut('enc-out','<span class="warn-text">⚠ Enter text to transform.</span>','warn');
+  let result;
+  try {
+    switch(mode) {
+      case 'b64enc': result = btoa(unescape(encodeURIComponent(val))); break;
+      case 'b64dec': result = decodeURIComponent(escape(atob(val))); break;
+      case 'urlenc': result = encodeURIComponent(val); break;
+      case 'urldec': result = decodeURIComponent(val); break;
+      case 'htmlenc':
+        result = val.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+        break;
+    }
+    showOut('enc-out', `<span class="ok-text">✔ OUTPUT:</span>\n${escH(result)}`, 'ok');
+  } catch(e) {
+    showOut('enc-out', `<span class="err-text">✘ ERROR: ${e.message}</span>`, 'error');
+  }
+}
+
+// ──────────── OWASP TOP 10 ────────────
+const owaspData = [
+  { num:'A01', name:'Broken Access Control', desc:'Users act outside intended permissions. Includes bypassing access checks, privilege escalation, and insecure direct object references.', risk:95, color:'#ff3c5a' },
+  { num:'A02', name:'Cryptographic Failures', desc:'Weak or missing encryption exposes sensitive data. Relates to improper use of cryptography for data at rest and in transit.', risk:88, color:'#ff6400' },
+  { num:'A03', name:'Injection', desc:'Hostile data is sent to an interpreter — SQL, NoSQL, OS, LDAP injection. User input is never trusted or validated.', risk:85, color:'#ff8c00' },
+  { num:'A04', name:'Insecure Design', desc:'Missing security controls at the design phase. Threat modeling and secure design patterns are essential early in development.', risk:75, color:'#ffb300' },
+  { num:'A05', name:'Security Misconfiguration', desc:'Default configs, unnecessary features, open cloud storage, verbose errors. Most commonly seen vulnerability class.', risk:80, color:'#d4e000' },
+  { num:'A06', name:'Vulnerable & Outdated Components', desc:'Unpatched libraries, frameworks, or OS components with known CVEs. Dependency management is critical.', risk:72, color:'#80d400' },
+  { num:'A07', name:'Identification & Auth Failures', desc:'Weak authentication, credential stuffing, session fixation, insecure password reset mechanisms.', risk:78, color:'#00d4a0' },
+  { num:'A08', name:'Software & Data Integrity Failures', desc:'Insecure deserialization, unsigned updates, and CI/CD pipeline security issues. Supply chain attacks.', risk:68, color:'#00d4ff' },
+  { num:'A09', name:'Security Logging & Monitoring Failures', desc:'Insufficient logging, monitoring, and alerting. Breaches go undetected for extended periods.', risk:65, color:'#0090ff' },
+  { num:'A10', name:'Server-Side Request Forgery', desc:'SSRF flaws occur when an app fetches a remote resource without validating the user-supplied URL.', risk:62, color:'#6060ff' },
+];
+
+function buildOWASP() {
+  const grid = document.getElementById('owasp-grid');
+  owaspData.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'owasp-card';
+    card.innerHTML = `
+      <div class="owasp-num">${item.num}</div>
+      <div class="owasp-name">${item.name}</div>
+      <div class="owasp-desc">${item.desc}</div>
+      <div class="owasp-risk">
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:var(--muted)">RISK</span>
+        <div class="risk-bar"><div class="risk-fill" style="width:0%;background:${item.color};transition:width 1s ease ${owaspData.indexOf(item)*0.1}s"></div></div>
+        <span style="font-family:var(--font-mono);font-size:0.65rem;color:${item.color}">${item.risk}%</span>
+      </div>`;
+    grid.appendChild(card);
+    setTimeout(() => {
+      card.querySelector('.risk-fill').style.width = item.risk + '%';
+    }, 500);
+  });
+}
+
+
+// ──────────── INIT ────────────
+buildOWASP();
+buildGlossary();
+loadQuestion();
+</script>
+</body>
+</html>
